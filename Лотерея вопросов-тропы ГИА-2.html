@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лотерея Вопросов</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 0 0 20px rgba(255,255,255,0.5);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #a0a0a0;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        /* Лототрон */
+        .lototron-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 30px 0;
+            position: relative;
+        }
+
+        .lototron-ball {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #ff6b6b, #c0392b, #8b0000);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 4em;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            box-shadow: 
+                0 10px 30px rgba(0,0,0,0.5),
+                inset 0 -10px 20px rgba(0,0,0,0.3),
+                inset 0 10px 20px rgba(255,255,255,0.3);
+            animation: float 3s ease-in-out infinite;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .lototron-ball:hover {
+            transform: scale(1.05);
+        }
+
+        .lototron-ball.active {
+            animation: spin 0.5s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.1); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+
+        /* Статистика */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .stat-card.correct {
+            background: rgba(40, 167, 69, 0.3);
+            border-color: #28a745;
+        }
+
+        .stat-card.incorrect {
+            background: rgba(220, 53, 69, 0.3);
+            border-color: #dc3545;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .stat-label {
+            color: #a0a0a0;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        /* Кнопки управления */
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        button {
+            padding: 15px 35px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-start:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-reset {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+        }
+
+        .btn-reset:hover {
+            transform: translateY(-3px);
+        }
+
+        .btn-correct {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            box-shadow: 0 5px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-correct:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.6);
+        }
+
+        .btn-incorrect {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            box-shadow: 0 5px 20px rgba(220, 53, 69, 0.4);
+        }
+
+        .btn-incorrect:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(220, 53, 69, 0.6);
+        }
+
+        .btn-next {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            color: white;
+        }
+
+        .btn-next:hover {
+            transform: translateY(-3px);
+        }
+
+        /* Карточка вопроса */
+        .question-card {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            margin: 30px 0;
+            border: 1px solid rgba(255,255,255,0.2);
+            display: none;
+        }
+
+        .question-card.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .question-number {
+            font-size: 1.2em;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .question-text {
+            font-size: 1.8em;
+            margin-bottom: 30px;
+            line-height: 1.4;
+            color: #fff;
+        }
+
+        .answer-section {
+            background: rgba(0,0,0,0.3);
+            padding: 25px;
+            border-radius: 15px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .answer-section.active {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .answer-label {
+            font-size: 1.1em;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .answer-text {
+            font-size: 1.5em;
+            color: #fff;
+        }
+
+        .answer-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .answer-buttons button {
+            min-width: 180px;
+        }
+
+        /* Результаты */
+        .results-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .results-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .result-column {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .result-column h3 {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+            font-size: 1.3em;
+        }
+
+        .result-column.correct h3 {
+            color: #28a745;
+            border-bottom-color: #28a745;
+        }
+
+        .result-column.incorrect h3 {
+            color: #dc3545;
+            border-bottom-color: #dc3545;
+        }
+
+        .result-list {
+            list-style: none;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .result-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .result-list::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+
+        .result-list::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.3);
+            border-radius: 4px;
+        }
+
+        .result-item {
+            padding: 15px;
+            margin-bottom: 12px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s ease;
+        }
+
+        .result-item:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateX(5px);
+        }
+
+        .result-item.correct {
+            border-left-color: #28a745;
+        }
+
+        .result-item.incorrect {
+            border-left-color: #dc3545;
+        }
+
+        .result-item-question {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .result-item-answer {
+            font-size: 0.9em;
+            color: #a0a0a0;
+        }
+
+        .result-item-time {
+            font-size: 0.8em;
+            color: #667eea;
+            margin-top: 5px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Статус */
+        .status-bar {
+            text-align: center;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .status-ready {
+            background: rgba(40, 167, 69, 0.3);
+            color: #28a745;
+            border: 1px solid #28a745;
+        }
+
+        .status-active {
+            background: rgba(102, 126, 234, 0.3);
+            color: #667eea;
+            border: 1px solid #667eea;
+        }
+
+        .status-complete {
+            background: rgba(220, 53, 69, 0.3);
+            color: #dc3545;
+            border: 1px solid #dc3545;
+        }
+
+        /* Индикатор лототрона */
+        .lototron-indicator {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 1.2em;
+            color: #a0a0a0;
+        }
+
+        .lototron-indicator span {
+            color: #667eea;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎱 ТРЕНАЖЕР ВОПРОСОВ</h1>
+        <p class="subtitle">Лотерея случайных заданий</p>
+
+        <!-- Статистика -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="remainingCount">0</div>
+                <div class="stat-label">Осталось вопросов</div>
+            </div>
+            <div class="stat-card correct">
+                <div class="stat-number" id="correctCount">0</div>
+                <div class="stat-label">✅ Правильных</div>
+            </div>
+            <div class="stat-card incorrect">
+                <div class="stat-number" id="incorrectCount">0</div>
+                <div class="stat-label">❌ Ошибок</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalCount">0</div>
+                <div class="stat-label">Всего вопросов</div>
+            </div>
+        </div>
+
+        <!-- Статус -->
+        <div class="status-bar status-ready" id="statusBar">🎯 ГОТОВ К РАБОТЕ</div>
+
+        <!-- Лототрон -->
+        <div class="lototron-container">
+            <div class="lototron-ball" id="lototronBall">?</div>
+        </div>
+        <div class="lototron-indicator" id="lototronIndicator">
+            Нажмите <span>🎲 Запустить</span> для начала лотереи
+        </div>
+
+        <!-- Кнопки управления -->
+        <div class="controls">
+            <button class="btn-start" id="startBtn" onclick="startQuiz()">🎲 Запустить</button>
+            <button class="btn-reset" onclick="resetQuiz()">🔄 Сбросить</button>
+        </div>
+
+        <!-- Карточка вопроса -->
+        <div class="question-card" id="questionCard">
+            <div class="question-number" id="questionNumber">Вопрос 1 из 10</div>
+            <div class="question-text" id="questionText">Ваш вопрос появится здесь</div>
+            
+            <button class="btn-next" id="showAnswerBtn" onclick="showAnswer()">👁️ Показать ответ</button>
+            
+            <div class="answer-section" id="answerSection">
+                <div class="answer-label">Правильный ответ:</div>
+                <div class="answer-text" id="answerText"></div>
+                
+                <div class="answer-buttons">
+                    <button class="btn-correct" onclick="markAnswer(true)">✅ Правильно</button>
+                    <button class="btn-incorrect" onclick="markAnswer(false)">❌ Ошибся</button>
+                </div>
+            </div>
+
+            <button class="btn-next hidden" id="nextBtn" onclick="nextQuestion()">➡️ Следующий вопрос</button>
+        </div>
+
+        <!-- Результаты -->
+        <div class="results-section">
+            <div class="result-column correct">
+                <h3>✅ Ответили правильно</h3>
+                <ul class="result-list" id="correctList">
+                    <li class="result-item">Пока нет правильных ответов</li>
+                </ul>
+            </div>
+            <div class="result-column incorrect">
+                <h3>❌ Ошиблись</h3>
+                <ul class="result-list" id="incorrectList">
+                    <li class="result-item">Пока нет ошибок</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Использованные вопросы -->
+        <div style="margin-top: 30px; padding: 20px; background: rgba(255,255,255,0.1); border-radius: 15px; text-align: center;">
+            <h3 style="margin-bottom: 10px;">📋 Прогресс</h3>
+            <p id="progressText" style="color: #a0a0a0;">Пока нет использованных вопросов</p>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // 📝 НАСТРОЙКИ ВОПРОСОВ (РЕДАКТИРОВАТЬ ЗДЕСЬ)
+        // ============================================
+        const questions = [
+    // ЭПИТЕТ
+    {
+        text: "Дай определение ЭПИТЕТА.",
+        answer: "Образное, эмоционально-оценочное определение, отвечающее на вопросы «какой? какая? какое? какие?» и обычно выраженное именем прилагательным."
+    },
+    {
+        text: "Назови троп: «волнистые туманы».",
+        answer: "Эпитет"
+    },
+
+    // ОЛИЦЕТВОРЕНИЕ
+    {
+        text: "Дай определение ОЛИЦЕТВОРЕНИЯ.",
+        answer: "Приписывание качеств, действий, эмоций человека предметам, явлениям природы, абстрактным понятиям."
+    },
+    {
+        text: "Определи тропы: «Буря мглою небо кроет, вихри снежные крутя: то как зверь, она завоет, то заплачет, как дитя».",
+        answer: "Олицетворение и сравнение: буря «завоет», «заплачет, как дитя»."
+    },
+    {
+        text: "Определи троп: «Спит земля в сиянье голубом».",
+        answer: "Олицетворение: «спит земля»."
+    },
+
+    // СРАВНЕНИЕ
+    {
+        text: "Дай определение СРАВНЕНИЯ.",
+        answer: "Сопоставление в тексте двух предметов или явлений, чтобы пояснить один из них при помощи другого."
+    },
+    {
+        text: "Какие союзы чаще всего вводят сравнение (назови не менее двух)?",
+        answer: "Как, точно, словно, будто."
+    },
+    {
+        text: "Определи троп: «Лёд неокрепший на речке студёной, словно как тающий сахар лежит».",
+        answer: "Сравнение: «словно как тающий сахар»."
+    },
+
+    // МЕТАФОРА
+    {
+        text: "Дай определение МЕТАФОРЫ.",
+        answer: "Перенос свойств с одного предмета на другой на основании их сходства."
+    },
+    {
+        text: "Почему метафору называют скрытым сравнением (объясни по таблице)?",
+        answer: "В основе метафоры лежит сравнение, но оно не оформлено с помощью сравнительных союзов; метафору легко переделать в сравнение словами «как, вроде, подобно»."
+    },
+    {
+        text: "Определи троп: «Пустых небес прозрачное стекло; Багровый костёр заката».",
+        answer: "Метафора: «пустых небес прозрачное стекло», «багровый костёр заката»."
+    },
+
+    // МЕТОНИМИЯ
+    {
+        text: "Дай общее определение МЕТОНИМИИ.",
+        answer: "Иносказательное обозначение предмета речи, «переименование», замена одного понятия другим, имеющим с ним причинную или иную связь (материал, пространство, назначение и т.п.)."
+    },
+    {
+        text: "Определи вид метонимии: «Я три тарелки съел».",
+        answer: "Метонимия, когда название сосуда используется в значении его содержимого: «три тарелки»."
+    },
+    {
+        text: "Определи вид метонимии: «Выпил всю бутылку».",
+        answer: "Метонимия, название сосуда вместо его содержимого: «всю бутылку»."
+    },
+    {
+        text: "Определи вид метонимии и выпиши пример: «Читал охотно Апулея, а Цицерона не читал».",
+        answer: "Метонимия, имя автора вместо его произведений: «Апулея», «Цицерона»."
+    },
+    {
+        text: "Определи вид метонимии: «Я прочитал всего Тургенева».",
+        answer: "Метонимия, имя автора вместо его произведений: «Тургенева»."
+    },
+    {
+        text: "Определи вид метонимии: «Ликует буйный Рим».",
+        answer: "Метонимия, название места действия вместо людей: «Рим»."
+    },
+    {
+        text: "Определи вид метонимии: «Серые шлемы с красной звездою белой ораве крикнули: “Стой!”».",
+        answer: "Метонимия, деталь внешности или одежды вместо людей: «серые шлемы с красной звездою»."
+    },
+
+    // ГИПЕРБОЛА
+    {
+        text: "Дай определение ГИПЕРБОЛЫ.",
+        answer: "Излишнее преувеличение тех или иных свойств изображаемого предмета."
+    },
+    {
+        text: "Определи троп: «Раздирает рот зевота шире Мексиканского залива».",
+        answer: "Гипербола: «раздирает рот зевота шире Мексиканского залива»."
+    },
+    {
+        text: "Определи троп: «В сто тысяч солнц закат пылал».",
+        answer: "Гипербола: «в сто тысяч солнц закат пылал»."
+    },
+
+    // ЛИТОТА
+    {
+        text: "Дай определение ЛИТОТЫ.",
+        answer: "Чрезмерное преуменьшение свойств изображаемого предмета или явления."
+    },
+    {
+        text: "Определи троп: «Ваш шпиц, прелестный шпиц, не более напёрстка!»",
+        answer: "Литота: «не более напёрстка»."
+    },
+
+    // ИРОНИЯ
+    {
+        text: "Дай определение ИРОНИИ.",
+        answer: "Скрытая насмешка; употребление слова или выражения в смысле, обратном буквальному."
+    },
+    {
+        text: "Определи троп: «Отколе, умная, бредёшь ты, голова?» (обращение к ослу).",
+        answer: "Ирония: «умная голова» в обращении к ослу."
+    },
+
+    // ПЕРИФРАЗА
+    {
+        text: "Дай определение ПЕРИФРАЗЫ.",
+        answer: "Замена названия предмета или явления описанием их отличительных признаков или указанием на характерные черты; используется, чтобы избежать речевого повтора."
+    },
+    {
+        text: "Назови троп и заменяемое слово: «царь зверей».",
+        answer: "Перифраза: «царь зверей» вместо «лев»."
+    },
+    {
+        text: "Назови троп и заменяемое слово: «братья наши меньшие».",
+        answer: "Перифраза: «братья наши меньшие» вместо «животные»."
+    },
+    {
+        text: "Назови троп и заменяемое выражение: «Автор “Героя нашего времени”».",
+        answer: "Перифраза: «автор “Героя нашего времени”» вместо «М.Ю. Лермонтов»."
+    },
+
+    // АНТИТЕЗА
+    {
+        text: "Дай определение АНТИТЕЗЫ.",
+        answer: "Резкое противопоставление понятий, мыслей, образов; часто создаётся с помощью антонимов."
+    },
+    {
+        text: "Определи фигуру и назови противопоставленные ряды: «Ты и убогая, Ты и обильная, Ты и могучая, Ты и бессильная, Матушка-Русь!»",
+        answer: "Антитеза: пары «убогая — обильная», «могучая — бессильная»."
+    },
+
+    // ИНВЕРСИЯ
+    {
+        text: "Дай определение ИНВЕРСИИ.",
+        answer: "Обратный порядок слов."
+    },
+    {
+        text: "Определи фигуру: «Досадно было, боя ждали».",
+        answer: "Инверсия: необычный порядок слов в предложении «Досадно было, боя ждали»."
+    },
+
+    // ГРАДАЦИЯ
+    {
+        text: "Дай общее определение ГРАДАЦИИ.",
+        answer: "Расположение слов или выражений по нарастанию или убыванию их значения (смыслового или эмоционального)."
+    },
+    {
+        text: "Определи вид градации: «Светились, горели, сияли огромные голубые глаза».",
+        answer: "Восходящая градация: «светились, горели, сияли»."
+    },
+    {
+        text: "Как в примере Л. Толстого проявляется восходящая градация: «Все разнообразие, вся прелесть, вся красота жизни слагаются из света и тени»?",
+        answer: "Слова «разнообразие», «прелесть», «красота» расположены по нарастанию значимости — восходящая градация."
+    },
+    {
+        text: "Как в примере А. Белого проявляется нисходящая градация: «Стёрты в мирах, в годах, в часах»?",
+        answer: "Слова «в мирах, в годах, в часах» расположены по убыванию масштаба — нисходящая градация."
+    },
+
+    // ОКСЮМОРОН
+    {
+        text: "Дай определение ОКСЮМОРОНА.",
+        answer: "Контрастное сочетание слов, противоположных по смыслу."
+    },
+    {
+        text: "Назови фигуру речи и один пример из ряда: «Мёртвые души, живой труп, грустная радость, сладкая горечь воспоминаний».",
+        answer: "Оксюморон, например: «живой труп»."
+    },
+
+    // ПАРЦЕЛЛЯЦИЯ
+    {
+        text: "Дай определение ПАРЦЕЛЛЯЦИИ.",
+        answer: "Намеренное нарушение границ предложения; разделение одного предложения с помощью точек на несколько частей — две и более."
+    },
+    {
+        text: "Определи фигуру речи и выпиши пример парцелляции из фрагмента: «Случилось это давно. Очень давно. У Анны беда стряслась. Большая.»",
+        answer: "Парцелляция: одно содержание разбито на короткие самостоятельные предложения «Очень давно. ... Большая.»."
+    },
+
+    // АНАФОРА
+    {
+        text: "Дай определение АНАФОРЫ.",
+        answer: "Единоначатие, повторение сходных слов в начале строф или близко расположенных фраз."
+    },
+    {
+        text: "Определи фигуру и выпиши повторяющееся слово из примера К. Симонова «Жди меня, и я вернусь...».",
+        answer: "Анафора, повторяется слово «Жди» («Жди меня...», «Жди, когда...», «Жди, когда...»)."
+    },
+
+    // ЭПИФОРА
+    {
+        text: "Дай определение ЭПИФОРЫ.",
+        answer: "Повторение одних и тех же слов или фраз в конце нескольких рядом стоящих конструкций."
+    },
+    {
+        text: "Определи фигуру и повторяющиеся слова в строках: «Я не знаю, где граница... Я не знаю, где граница...».",
+        answer: "Эпифора, повторяется сочетание «где граница» в конце строк."
+    },
+
+    // РИТОРИЧЕСКИЙ ВОПРОС
+    {
+        text: "Дай определение РИТОРИЧЕСКОГО ВОПРОСА.",
+        answer: "Вопрос, который ставится не с целью получения ответа, а для привлечения внимания к явлению; вопрос, на который не ожидается ответа."
+    },
+    {
+        text: "Определи вид фигуры речи: «Что день грядущий нам готовит?»",
+        answer: "Риторический вопрос."
+    },
+
+    // РИТОРИЧЕСКОЕ ОБРАЩЕНИЕ
+    {
+        text: "Дай определение РИТОРИЧЕСКОГО ОБРАЩЕНИЯ.",
+        answer: "Эмоциональное обращение к людям, непосредственно не участвующим в общении, или к неодушевлённым объектам."
+    },
+    {
+        text: "Определи вид фигуры речи в примере: «Люди мира, бережно относитесь к природе!»",
+        answer: "Риторическое обращение: «Люди мира»."
+    },
+    {
+        text: "Определи вид фигуры речи в обращении С. Есенина: «Звёздочки ясные, звёзды высокие! Что вы храните в себе, что скрываете!»",
+        answer: "Риторическое обращение к звёздам."
+    },
+
+    // ЭЛЛИПСИС
+    {
+        text: "Дай определение ЭЛЛИПСИСА.",
+        answer: "Пропуск сказуемого, придающий речи динамизм."
+    },
+    {
+        text: "Определи фигуру и укажи пропуск в примере: «Мы сёла — в пепел, грады — в прах».",
+        answer: "Эллипсис, пропущено сказуемое (например, «обратили»)."
+    },
+
+    // ЛЕКСИЧЕСКИЙ ПОВТОР
+    {
+        text: "Дай определение ЛЕКСИЧЕСКОГО ПОВТОРА.",
+        answer: "Намеренное повторение одного и того же слова или словосочетания для усиления эмоциональности, выразительности высказывания."
+    },
+    {
+        text: "Определи фигуру и назови повтор в примере: «Казалось, всё в природе уснуло: спала трава, спали деревья, спали облака!»",
+        answer: "Лексический повтор глагола «спала / спали»."
+    },
+
+    // ВОПРОСНО-ОТВЕТНАЯ ФОРМА
+    {
+        text: "Дай определение ВОПРОСНО-ОТВЕТНОЙ ФОРМЫ ИЗЛОЖЕНИЯ.",
+        answer: "Форма изложения, при которой чередуются вопросы и ответы."
+    },
+    {
+        text: "Определи форму изложения: «Что делать? Не знаю. У кого спросить совета? Неизвестно.»",
+        answer: "Вопросно-ответная форма изложения."
+    },
+
+    // СИНТАКСИЧЕСКИЙ ПАРАЛЛЕЛИЗМ
+    {
+        text: "Дай определение СИНТАКСИЧЕСКОГО ПАРАЛЛЕЛИЗМА.",
+        answer: "Одинаковое синтаксическое построение соседних предложений, одинаковое расположение в них сходных членов предложения."
+    },
+    {
+        text: "Определи фигуру речи: «Гляжу на будущность с боязнью, Гляжу на прошлое с тоской».",
+        answer: "Синтаксический параллелизм: повторяющаяся конструкция «Гляжу на ... с ...»."
+    },
+    {
+        text: "Определи фигуру речи: «В синем небе звёзды блещут, В синем море волны хлещут».",
+        answer: "Синтаксический параллелизм: «В синем небе звёзды блещут» — «В синем море волны хлещут»."
+    },
+
+    // ОДНОРОДНЫЕ ЧЛЕНЫ
+    {
+        text: "Дай определение ОДНОРОДНЫХ ЧЛЕНОВ ПРЕДЛОЖЕНИЯ.",
+        answer: "Перечисляемые действия, предметы, признаки."
+    },
+    {
+        text: "Найди однородные члены в предложении: «Были это весёлые, сильные и смелые люди!»",
+        answer: "Однородные определения: «весёлые, сильные и смелые»."
+    },
+
+    // АССОНАНС
+    {
+        text: "Дай определение АССОНАНСА.",
+        answer: "Повторение в стихотворной речи одинаковых гласных звуков."
+    },
+    {
+        text: "Определи приём звукописи в строках: «Быстро лечу я по рельсам чугунным. Думаю думу свою.»",
+        answer: "Ассонанс (повтор гласных звуков)."
+    },
+
+    // АЛЛИТЕРАЦИЯ
+    {
+        text: "Дай определение АЛЛИТЕРАЦИИ.",
+        answer: "Повторение в стихотворной речи одинаковых согласных."
+    },
+    {
+        text: "Определи приём звукописи и назови повторяющиеся звуки: «Морозом выпитые лужи хрустят и хрупки, как хрусталь.»",
+        answer: "Аллитерация, повтор согласных звуков «хр», «хр»."
+    }
+];
+
+        // ============================================
+
+        let availableQuestions = [];
+        let correctAnswers = [];
+        let incorrectAnswers = [];
+        let currentQuestion = null;
+        let questionNumber = 0;
+        let quizStarted = false;
+        let questionCounter = 0;
+
+        function init() {
+            updateStats();
+            document.getElementById('totalCount').textContent = questions.length;
+        }
+
+        function startQuiz() {
+            if (questions.length === 0) {
+                alert('⚠️ Добавьте вопросы в массив questions!');
+                return;
+            }
+
+            availableQuestions = [...questions];
+            correctAnswers = [];
+            incorrectAnswers = [];
+            quizStarted = true;
+            questionCounter = 0;
+
+            document.getElementById('startBtn').textContent = '🎲 Перезапустить';
+            document.getElementById('statusBar').textContent = '🎰 АКТИВНАЯ ЛОТЕРЕЯ';
+            document.getElementById('statusBar').className = 'status-bar status-active';
+            document.getElementById('progressText').textContent = 'В процессе работы...';
+            document.getElementById('lototronBall').classList.add('active');
+
+            nextQuestion();
+            updateStats();
+            updateResultsLists();
+        }
+
+        function nextQuestion() {
+            if (availableQuestions.length === 0) {
+                finishQuiz();
+                return;
+            }
+
+            questionCounter++;
+            const randomIndex = Math.floor(Math.random() * availableQuestions.length);
+            currentQuestion = availableQuestions[randomIndex];
+            availableQuestions.splice(randomIndex, 1);
+
+            questionNumber = questionCounter;
+
+            document.getElementById('questionCard').classList.add('active');
+            document.getElementById('questionNumber').textContent = `Вопрос ${questionNumber} из ${questions.length}`;
+            document.getElementById('questionText').textContent = currentQuestion.text;
+            document.getElementById('answerText').textContent = currentQuestion.answer;
+            document.getElementById('answerSection').classList.remove('active');
+            document.getElementById('showAnswerBtn').classList.remove('hidden');
+            document.getElementById('nextBtn').classList.add('hidden');
+
+            // Анимация лототрона
+            document.getElementById('lototronBall').textContent = questionNumber;
+            document.getElementById('lototronIndicator').innerHTML = 
+                'Выпал вопрос <span>№' + questionNumber + '</span>';
+
+            updateStats();
+        }
+
+        function showAnswer() {
+            document.getElementById('answerSection').classList.add('active');
+            document.getElementById('showAnswerBtn').classList.add('hidden');
+        }
+
+        function markAnswer(isCorrect) {
+            if (!currentQuestion) return;
+
+            const questionData = {
+                text: currentQuestion.text,
+                answer: currentQuestion.answer,
+                number: questionNumber,
+                timestamp: new Date().toLocaleTimeString('ru-RU')
+            };
+
+            if (isCorrect) {
+                correctAnswers.push(questionData);
+            } else {
+                incorrectAnswers.push(questionData);
+            }
+
+            document.getElementById('answerSection').classList.remove('active');
+            document.getElementById('showAnswerBtn').classList.remove('hidden');
+            document.getElementById('nextBtn').classList.remove('hidden');
+
+            updateStats();
+            updateResultsLists();
+        }
+
+        function finishQuiz() {
+            quizStarted = false;
+            document.getElementById('questionCard').classList.remove('active');
+            document.getElementById('statusBar').textContent = '🏆 ЛОТЕРЕЯ ЗАВЕРШЕНА';
+            document.getElementById('statusBar').className = 'status-bar status-complete';
+            document.getElementById('startBtn').textContent = '🎲 Начать заново';
+            document.getElementById('lototronBall').classList.remove('active');
+            document.getElementById('lototronBall').textContent = '🏆';
+            document.getElementById('lototronIndicator').innerHTML = 
+                'Все вопросы использованы! <span>Молодец!</span>';
+
+            const totalUsed = correctAnswers.length + incorrectAnswers.length;
+            document.getElementById('progressText').textContent = 
+                `Использовано вопросов: ${totalUsed} из ${questions.length} | 
+                 Правильно: ${correctAnswers.length} | Ошибок: ${incorrectAnswers.length}`;
+
+            updateStats();
+        }
+
+        function resetQuiz() {
+            availableQuestions = [];
+            correctAnswers = [];
+            incorrectAnswers = [];
+            currentQuestion = null;
+            questionNumber = 0;
+            questionCounter = 0;
+            quizStarted = false;
+
+            document.getElementById('questionCard').classList.remove('active');
+            document.getElementById('answerSection').classList.remove('active');
+            document.getElementById('showAnswerBtn').classList.remove('hidden');
+            document.getElementById('nextBtn').classList.add('hidden');
+            document.getElementById('startBtn').textContent = '🎲 Запустить';
+            document.getElementById('statusBar').textContent = '🎯 ГОТОВ К РАБОТЕ';
+            document.getElementById('statusBar').className = 'status-bar status-ready';
+            document.getElementById('progressText').textContent = 'Пока нет использованных вопросов';
+            document.getElementById('lototronBall').classList.remove('active');
+            document.getElementById('lototronBall').textContent = '?';
+            document.getElementById('lototronIndicator').innerHTML = 
+                'Нажмите <span>🎲 Запустить</span> для начала лотереи';
+
+            updateStats();
+            updateResultsLists();
+        }
+
+        function updateStats() {
+            document.getElementById('remainingCount').textContent = availableQuestions.length;
+            document.getElementById('correctCount').textContent = correctAnswers.length;
+            document.getElementById('incorrectCount').textContent = incorrectAnswers.length;
+        }
+
+        function updateResultsLists() {
+            const correctList = document.getElementById('correctList');
+            const incorrectList = document.getElementById('incorrectList');
+
+            if (correctAnswers.length > 0) {
+                correctList.innerHTML = correctAnswers.map((q, i) => `
+                    <li class="result-item correct">
+                        <div class="result-item-question">${i + 1}. ${q.text}</div>
+                        <div class="result-item-answer">Ответ: ${q.answer}</div>
+                        <div class="result-item-time">⏰ ${q.timestamp}</div>
+                    </li>
+                `).join('');
+            } else {
+                correctList.innerHTML = '<li class="result-item">Пока нет правильных ответов</li>';
+            }
+
+            if (incorrectAnswers.length > 0) {
+                incorrectList.innerHTML = incorrectAnswers.map((q, i) => `
+                    <li class="result-item incorrect">
+                        <div class="result-item-question">${i + 1}. ${q.text}</div>
+                        <div class="result-item-answer">Ответ: ${q.answer}</div>
+                        <div class="result-item-time">⏰ ${q.timestamp}</div>
+                    </li>
+                `).join('');
+            } else {
+                incorrectList.innerHTML = '<li class="result-item">Пока нет ошибок</li>';
+            }
+        }
+
+        // Инициализация при загрузке
+        init();
+    </script>
+</body>
+</html>
